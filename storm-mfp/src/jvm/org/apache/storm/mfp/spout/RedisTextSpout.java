@@ -48,6 +48,7 @@ public class RedisTextSpout extends BaseRichSpout {
 
   LinkedBlockingQueue<String> queue;
   final int MAX_QUEUE_LENGTH = 10000;
+  final int WAIT_FOR_NEXT_TUPLE = 10;
 
   JedisPool pool;
 
@@ -119,7 +120,7 @@ public class RedisTextSpout extends BaseRichSpout {
     String message = queue.poll();
 
     if( message == null){
-      Utils.sleep(100);
+      Utils.sleep(WAIT_FOR_NEXT_TUPLE);
       return;
     }
 

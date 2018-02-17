@@ -19,10 +19,9 @@ import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.generated.AlreadyAliveException;
 import org.apache.storm.generated.InvalidTopologyException;
 import org.apache.storm.generated.AuthorizationException;
-import org.apache.storm.topology.base.BaseWindowedBolt;
+import org.apache.storm.topology.IWindowedBolt;
 
 import org.apache.storm.mfp.spout.RedisTextSpout;
-import org.apache.storm.mfp.spout.RandomSentenceSpout;
 
 import org.apache.storm.mfp.bolt.MFPMinerBolt;
 
@@ -61,30 +60,15 @@ public class MaximalFrequentPatternTopology {
   }
 
   private StormTopology buildTopology(){
-    BaseRichSpout spout;
-
-    boolean fromRedis = true;
-    if(fromRedis){
-      spout = redisSpout();
-    }else{
-      spout = new RandomSentenceSpout();
-    }
-
-    return buildTopologyFromSpout(spout);
-  }
-
-
-  private StormTopology buildTopologyFromSpout(BaseRichSpout spout){
     TopologyBuilder builder = new TopologyBuilder();
 
-    builder.setSpout("transaction", spout, 1);
+    builder.setSpout("transaction", redisSpout(), 1);
     builder.setBolt("mfp", minerBolt(), 3).shuffleGrouping("transaction");
 
     return builder.createTopology();
   }
 
-  private BaseWindowedBolt
-   minerBolt(){
+  private IWindowedBolt minerBolt(){
     return new MFPMinerBolt(MFP_MINIMUM_SUPPORT_LEVEL).withWindow(Count.of(TRANSACTION_WINDOW_SIZE));
   }
 
@@ -95,9 +79,9 @@ public class MaximalFrequentPatternTopology {
   public static void main(String[] args) throws Exception {
     MaximalFrequentPatternTopology mfpTopology = new MaximalFrequentPatternTopology();
 
-    boolean simulateCluster = !(args != null && args.length > 0);
+    boolean simulateLocalCluster = !(args != null && args.length > 0);
 
-    if( simulateCluster ){
+    if( simulateLocalCluster ){
       mfpTopology.runOnLocalCluster();
     }else{
       mfpTopology.runOnCluster(args[0]);
