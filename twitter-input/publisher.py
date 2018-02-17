@@ -23,5 +23,6 @@ RATE = 0.2
 if __name__ == "__main__":
   publisher = Publisher(CHANNEL, RATE)
 
+  print "Starting publish..."
   while True:
     publisher.start_publishing_from(FILE)
