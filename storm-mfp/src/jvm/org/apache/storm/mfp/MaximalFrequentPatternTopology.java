@@ -19,17 +19,18 @@ import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.generated.AlreadyAliveException;
 import org.apache.storm.generated.InvalidTopologyException;
 import org.apache.storm.generated.AuthorizationException;
+import org.apache.storm.topology.base.BaseWindowedBolt;
 
 import org.apache.storm.mfp.spout.RedisTextSpout;
 import org.apache.storm.mfp.spout.RandomSentenceSpout;
+
+import org.apache.storm.mfp.bolt.MFPMinerBolt;
 
 import java.util.Map;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-
-import org.apache.storm.mfp.bolt.MFPMinerBolt;
 
 import static org.apache.storm.topology.base.BaseWindowedBolt.Count;
 
@@ -82,11 +83,12 @@ public class MaximalFrequentPatternTopology {
     return builder.createTopology();
   }
 
-  private MFPMinerBolt minerBolt(){
+  private BaseWindowedBolt
+   minerBolt(){
     return new MFPMinerBolt(MFP_MINIMUM_SUPPORT_LEVEL).withWindow(Count.of(TRANSACTION_WINDOW_SIZE));
   }
 
-  private redisSpout(){
+  private RedisTextSpout redisSpout(){
     return new RedisTextSpout("localhost", 6379, "MFP_STREAM");
   }
 
