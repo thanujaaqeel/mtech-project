@@ -39,8 +39,6 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
-import org.apache.storm.mfp.bolt.MFPBolt;
-
 
 /**
  * This is a basic example of a Storm topology.
@@ -73,7 +71,7 @@ public class ExclamationTopology {
     TopologyBuilder builder = new TopologyBuilder();
 
     builder.setSpout("word", new TestWordSpout(), 10);
-    builder.setBolt("mfp1", new MFPBolt(), 3).shuffleGrouping("word");
+    builder.setBolt("mfp1", new ExclamationBolt(), 3).shuffleGrouping("word");
 
     Config conf = new Config();
     conf.setDebug(true);
