@@ -16,10 +16,12 @@ class Publisher():
           self.publish(line)
           time.sleep(self.rate)
 
-CHANNEL = "TWITTER_STREAM"
+CHANNEL = "MFP_STREAM"
 FILE = "tweets.txt"
 RATE = 0.2
 
 if __name__ == "__main__":
   publisher = Publisher(CHANNEL, RATE)
-  publisher.start_publishing_from(FILE)
+
+  while True:
+    publisher.start_publishing_from(FILE)
