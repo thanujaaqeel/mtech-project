@@ -28,12 +28,17 @@ public class MFPMinerBolt extends BaseWindowedBolt {
 
     private OutputCollector collector;
     private AssocRuleMiner ruleMiner;
+    private int minimumSupportLevel;
+
+    public MFPMinerBolt(int minimumSupportLevel){
+        this.minimumSupportLevel = minimumSupportLevel;
+    }
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
         this.ruleMiner = new Apriori();
-        this.ruleMiner.setMinSupportLevel(2);
+        this.ruleMiner.setMinSupportLevel(minimumSupportLevel);
     }
 
     @Override
@@ -51,7 +56,7 @@ public class MFPMinerBolt extends BaseWindowedBolt {
         ItemSets mfpItemSets = ruleMiner.findMaxPatterns(transactions, metaData.getUniqueItems());
     
         for(ItemSet itemSet : mfpItemSets.getSets()){
-          System.out.println("item-set: " + itemSet);
+          LOG.info("MFP mined: {}", itemSet);
         }
     }
 

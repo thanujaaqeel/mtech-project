@@ -83,7 +83,7 @@ public class RedisTextSpout extends BaseRichSpout {
 
         @Override
         public void onMessage(String _channel, String message) {
-          LOG.debug("onMessage: "+ message.trim() );
+          LOG.info("onMessage: "+ message.trim() );
           queue.offer(message.trim());
         }
       };
@@ -123,7 +123,7 @@ public class RedisTextSpout extends BaseRichSpout {
       return;
     }
 
-    LOG.debug("Emitting tuple: {}", message);
+    LOG.info("Emitting tuple: {}", message);
     _collector.emit(new Values(message));
     
   }
