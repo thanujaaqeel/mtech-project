@@ -16,9 +16,6 @@ import redis.clients.jedis.JedisPoolConfig;
 import java.util.List;
 import java.util.Map;
 
-import com.github.chen0040.fpm.data.ItemSets;
-import com.github.chen0040.fpm.data.ItemSet;
-
 public class RedisReporterBolt extends BaseRichBolt {
   private static final Logger LOG = LoggerFactory.getLogger(RedisReporterBolt.class);
 
