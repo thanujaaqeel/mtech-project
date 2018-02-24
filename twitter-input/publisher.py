@@ -14,11 +14,11 @@ class Publisher():
     with open(source_file, "r") as fp:
       for line in fp:
           self.publish(line)
-          time.sleep(self.rate)
+          time.sleep(1.0/self.rate)
 
 CHANNEL = "MFP_STREAM"
 FILE = "tweets.txt"
-RATE = 0.002
+RATE = 1000
 
 if __name__ == "__main__":
   publisher = Publisher(CHANNEL, RATE)
