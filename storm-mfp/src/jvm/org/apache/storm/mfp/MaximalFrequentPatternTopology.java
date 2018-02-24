@@ -24,6 +24,7 @@ import org.apache.storm.topology.IWindowedBolt;
 import org.apache.storm.mfp.spout.RedisTextSpout;
 
 import org.apache.storm.mfp.bolt.MFPMinerBolt;
+import org.apache.storm.mfp.bolt.RedisReporterBolt;
 
 import java.util.Map;
 
@@ -35,7 +36,8 @@ import static org.apache.storm.topology.base.BaseWindowedBolt.Count;
 
 public class MaximalFrequentPatternTopology {
 
-  private final int TRANSACTION_WINDOW_SIZE = 50;
+  private final int TRANSACTION_WINDOW_SIZE = 10;
+  private final int TRANSACTION_SLIDING_WINDOW_SIZE = 5;
   private final int MFP_MINIMUM_SUPPORT_LEVEL = 2;
 
   public void runOnCluster(String name) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException{
@@ -64,19 +66,24 @@ public class MaximalFrequentPatternTopology {
 
     builder.setSpout("transaction", redisSpout(), 1);
     builder.setBolt("mfp", minerBolt(), 3).shuffleGrouping("transaction");
-
+    builder.setBolt("reporter", reporterBolt(), 1).shuffleGrouping("mfp");
     return builder.createTopology();
   }
 
   private IWindowedBolt minerBolt(){
     MFPMinerBolt minerBolt = new MFPMinerBolt(MFP_MINIMUM_SUPPORT_LEVEL);
-    IWindowedBolt bolt = minerBolt.withWindow(Count.of(TRANSACTION_WINDOW_SIZE));
+    IWindowedBolt bolt = minerBolt.withWindow(Count.of(TRANSACTION_WINDOW_SIZE), Count.of(TRANSACTION_SLIDING_WINDOW_SIZE));
     return bolt;
   }
 
   private RedisTextSpout redisSpout(){
     RedisTextSpout spout = new RedisTextSpout("localhost", 6379, "MFP_STREAM");
     return spout;
+  }
+
+  private RedisReporterBolt reporterBolt(){
+    RedisReporterBolt bolt = new RedisReporterBolt("localhost", 6379, "MFP_OUTPUT_STREAM");
+    return bolt;
   }
 
   public static void main(String[] args) throws Exception {

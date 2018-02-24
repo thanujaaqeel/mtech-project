@@ -84,7 +84,7 @@ public class RedisTextSpout extends BaseRichSpout {
 
         @Override
         public void onMessage(String _channel, String message) {
-          LOG.info("onMessage: "+ message.trim() );
+          // LOG.info("onMessage: "+ message.trim() );
           queue.offer(message.trim());
         }
       };

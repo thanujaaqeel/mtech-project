@@ -18,7 +18,7 @@ class Publisher():
 
 CHANNEL = "MFP_STREAM"
 FILE = "tweets.txt"
-RATE = 0.2
+RATE = 0.002
 
 if __name__ == "__main__":
   publisher = Publisher(CHANNEL, RATE)
