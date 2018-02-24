@@ -35,8 +35,8 @@ import static org.apache.storm.topology.base.BaseWindowedBolt.Count;
 
 public class MaximalFrequentPatternTopology {
 
-  private int TRANSACTION_WINDOW_SIZE = 50;
-  private int MFP_MINIMUM_SUPPORT_LEVEL = 2;
+  private final int TRANSACTION_WINDOW_SIZE = 50;
+  private final int MFP_MINIMUM_SUPPORT_LEVEL = 2;
 
   public void runOnCluster(String name) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException{
     Config conf = new Config();
@@ -69,11 +69,14 @@ public class MaximalFrequentPatternTopology {
   }
 
   private IWindowedBolt minerBolt(){
-    return new MFPMinerBolt(MFP_MINIMUM_SUPPORT_LEVEL).withWindow(Count.of(TRANSACTION_WINDOW_SIZE));
+    MFPMinerBolt minerBolt = new MFPMinerBolt(MFP_MINIMUM_SUPPORT_LEVEL);
+    IWindowedBolt bolt = minerBolt.withWindow(Count.of(TRANSACTION_WINDOW_SIZE));
+    return bolt;
   }
 
   private RedisTextSpout redisSpout(){
-    return new RedisTextSpout("localhost", 6379, "MFP_STREAM");
+    RedisTextSpout spout = new RedisTextSpout("localhost", 6379, "MFP_STREAM");
+    return spout;
   }
 
   public static void main(String[] args) throws Exception {
