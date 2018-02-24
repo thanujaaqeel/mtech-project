@@ -2,6 +2,7 @@ import twitter
 import signal
 import sys
 import io
+import re
 
 class TweetsDownloader():
     def __init__(self, consumer_key, consumer_secret, access_token_key, access_token_secret, file_name):
@@ -13,11 +14,31 @@ class TweetsDownloader():
         self.file_name = file_name
 
     def write(self, text):
-        cleaned_text = self.clean(text)
-        self.file.write(cleaned_text)
+        self.file.write(text)
+        self.file.write(unicode("\n"))
 
     def clean(self, text):
-        return text
+        return re.sub( '\s+', ' ', self.remove_RT_prefix(self.remove_non_ascii(text))).strip()
+    
+    def remove_RT_prefix(self, text):
+        return (re.sub(r'RT @.+:','', text) if text else '')
+
+    def remove_non_ascii(self, text):
+        return (re.sub(r'[^\x00-\x7F]+','', text) if text else '')
+
+    def process(self, tweet):
+        text = self.get_text(tweet)
+
+        cleaned_text = self.clean(text)
+
+        if cleaned_text:
+            self.write(text)
+    
+    def get_text(self, tweet):
+        try:
+            return tweet['text']
+        except KeyError:
+            pass
 
     def start(self):
         signal.signal(signal.SIGINT, self.handle_sig_int)
@@ -25,10 +46,7 @@ class TweetsDownloader():
         self.file = io.open(self.file_name, 'w') 
 
         for tweet in stream:
-            try:
-               self.write(tweet['text'])
-            except KeyError:
-                pass
+            self.process(tweet)
         
         self.file.close()
         self.file = None
