@@ -18,13 +18,33 @@ class TweetsDownloader():
         self.file.write(unicode("\n"))
 
     def clean(self, text):
-        return re.sub( '\s+', ' ', self.remove_RT_prefix(self.remove_non_ascii(text))).strip()
+        if not text:
+            return ''
+        non_ascii_removed = self.remove_non_ascii(text)
+        retweet_removed = self.remove_RT_prefix(non_ascii_removed)
+        whitespace_removed = self.remove_extra_whitespace(retweet_removed)
+        return whitespace_removed.strip()
     
+    def remove_extra_whitespace(self, text):
+        if not text:
+            return text
+        return re.sub('\s+', ' ', text)
+
     def remove_RT_prefix(self, text):
-        return (re.sub(r'RT @.+:','', text) if text else '')
+        if not text:
+            return text
+
+        return re.sub(r'^RT @.+:', '', text)
 
     def remove_non_ascii(self, text):
-        return (re.sub(r'[^\x00-\x7F]+','', text) if text else '')
+        if not text:
+            return text
+
+        removed_string = re.sub(r'[^\x00-\x7F]+','', text)
+        chars_removed = len(text) - len(removed_string)
+        if chars_removed >= 5:
+            return ''
+        return removed_string
 
     def process(self, tweet):
         text = self.get_text(tweet)
@@ -32,7 +52,7 @@ class TweetsDownloader():
         cleaned_text = self.clean(text)
 
         if cleaned_text:
-            self.write(text)
+            self.write(cleaned_text)
     
     def get_text(self, tweet):
         try:
