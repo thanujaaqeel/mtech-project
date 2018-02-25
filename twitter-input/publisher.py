@@ -18,8 +18,8 @@ class Publisher():
       for line in fp:
           self.publish(line)
           self.count += 1
-          # time.sleep(1.0/self.rate)
-          # self.measure_rate()
+          time.sleep(1.0/self.rate)
+          self.measure_rate()
 
   def measure_rate(self):
     if self.start_time == None:
@@ -35,8 +35,8 @@ class Publisher():
       self.start_time = datetime.datetime.now()
 
 CHANNEL = "MFP_STREAM"
-FILE = "tweets.txt"
-RATE = 10000000000000
+FILE = "tweets_1.txt"
+RATE = 50
 
 if __name__ == "__main__":
   publisher = Publisher(CHANNEL, RATE)

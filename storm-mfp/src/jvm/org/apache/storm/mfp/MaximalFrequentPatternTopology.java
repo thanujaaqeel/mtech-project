@@ -80,7 +80,7 @@ public class MaximalFrequentPatternTopology {
 
   private IRichSpout transactionsSpout(){
     // RedisTextSpout spout = new RedisTextSpout("localhost", 6379, "MFP_STREAM");
-    FileTextSpout spout = new FileTextSpout("/Users/thanuja/mtech-project/twitter-input/tweets.txt");
+    FileTextSpout spout = new FileTextSpout("/Users/thanuja/mtech-project/twitter-input/tweets_1.txt");
     return spout;
   }
 

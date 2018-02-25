@@ -125,11 +125,12 @@ public class RedisTextSpout extends BaseRichSpout {
     String message = queue.poll();
 
     if( message == null){
-      // Utils.sleep(WAIT_FOR_NEXT_TUPLE);
+      LOG.info("Sleeping for next item");
+      Utils.sleep(WAIT_FOR_NEXT_TUPLE);
       return;
     }
 
-    LOG.info("Emitting tuple: {}", message);
+    // LOG.info("Emitting tuple: {}", message);
     _collector.emit(new Values(message));
     measure();
     

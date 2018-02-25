@@ -46,7 +46,7 @@ public class FileTextSpout extends BaseRichSpout {
   boolean _isDistributed;
   SpoutOutputCollector _collector;
 
-  final int WAIT_FOR_NEXT_TUPLE = 1;
+  final int RATE = 50;
 
   BufferedReader reader;
   
@@ -80,6 +80,7 @@ public class FileTextSpout extends BaseRichSpout {
   @Override
   public void nextTuple() {
     String message;
+
     try{
       message = reader.readLine();
     }catch(IOException e){
@@ -88,13 +89,15 @@ public class FileTextSpout extends BaseRichSpout {
 
     if( reader == null || message == null){
       reader = getReader();
-      // Utils.sleep(WAIT_FOR_NEXT_TUPLE);
       return;
     }
 
     LOG.info("Emitting tuple: {}", message);
     _collector.emit(new Values(message));
+
     measure();
+
+    Utils.sleep(1000 / RATE);
     
   }
   
