@@ -20,8 +20,10 @@ import org.apache.storm.generated.AlreadyAliveException;
 import org.apache.storm.generated.InvalidTopologyException;
 import org.apache.storm.generated.AuthorizationException;
 import org.apache.storm.topology.IWindowedBolt;
+import org.apache.storm.topology.IRichSpout;
 
 import org.apache.storm.mfp.spout.RedisTextSpout;
+import org.apache.storm.mfp.spout.FileTextSpout;
 
 import org.apache.storm.mfp.bolt.MFPMinerBolt;
 import org.apache.storm.mfp.bolt.RedisReporterBolt;
@@ -64,7 +66,7 @@ public class MaximalFrequentPatternTopology {
   private StormTopology buildTopology(){
     TopologyBuilder builder = new TopologyBuilder();
 
-    builder.setSpout("transaction", redisSpout(), 1);
+    builder.setSpout("transaction", transactionsSpout(), 1);
     builder.setBolt("mfp", minerBolt(), 3).shuffleGrouping("transaction");
     builder.setBolt("reporter", reporterBolt(), 1).shuffleGrouping("mfp");
     return builder.createTopology();
@@ -76,8 +78,9 @@ public class MaximalFrequentPatternTopology {
     return bolt;
   }
 
-  private RedisTextSpout redisSpout(){
-    RedisTextSpout spout = new RedisTextSpout("localhost", 6379, "MFP_STREAM");
+  private IRichSpout transactionsSpout(){
+    // RedisTextSpout spout = new RedisTextSpout("localhost", 6379, "MFP_STREAM");
+    FileTextSpout spout = new FileTextSpout("/Users/thanuja/mtech-project/twitter-input/tweets.txt");
     return spout;
   }
 

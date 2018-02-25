@@ -38,93 +38,56 @@ import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
 
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
+import java.io.*;
 
-public class RedisTextSpout extends BaseRichSpout {
-  public static Logger LOG = LoggerFactory.getLogger(RedisTextSpout.class);
+public class FileTextSpout extends BaseRichSpout {
+  public static Logger LOG = LoggerFactory.getLogger(FileTextSpout.class);
   boolean _isDistributed;
   SpoutOutputCollector _collector;
 
-  LinkedBlockingQueue<String> queue;
-  final int MAX_QUEUE_LENGTH = 100000;
   final int WAIT_FOR_NEXT_TUPLE = 1;
 
-  JedisPool pool;
-
-  String host;
-  int port;
-  String channel;
+  BufferedReader reader;
+  
+  String filename;
 
   int count;
   long startTime;
   
-  public RedisTextSpout(String host, int port, String channel) {
+  public FileTextSpout(String filename) {
     this(true);
-
-    this.host = host;
-    this.port = port;
-    this.channel = channel;
+    this.filename = filename;
     this.count = 0; 
     this.startTime = -1;
   }
 
-  public RedisTextSpout(boolean isDistributed) {
+  public FileTextSpout(boolean isDistributed) {
     _isDistributed = isDistributed;
   }
-  
-  class ListenerThread extends Thread {
-    LinkedBlockingQueue<String> queue;
-    JedisPool pool;
-    String channel;
-
-    public ListenerThread(LinkedBlockingQueue<String> queue, JedisPool pool, String channel) {
-      this.queue = queue;
-      this.pool = pool;
-      this.channel = channel;
-    }
-
-    public void run() {
-      JedisPubSub listener = new JedisPubSub() {
-
-        @Override
-        public void onMessage(String _channel, String message) {
-          // LOG.info("onMessage: "+ message.trim() );
-          queue.offer(message.trim());
-        }
-      };
-        
-      Jedis jedis = pool.getResource();
-      try {
-        jedis.subscribe(listener, channel);
-      } finally {
-        pool.returnResource(jedis);
-      }
-    }
-  };
-
 
   @Override
   public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
     _collector = collector;
-    
-    queue = new LinkedBlockingQueue<String>(MAX_QUEUE_LENGTH);
-    pool = new JedisPool(new JedisPoolConfig(), host, port);
-    
-    ListenerThread listener = new ListenerThread(queue, pool, channel);
-    listener.start();
+    reader = getReader();
 
   }
   
   public void close() {
-    pool.destroy();
+    
   }
   
   @Override
   public void nextTuple() {
-    String message = queue.poll();
+    String message;
+    try{
+      message = reader.readLine();
+    }catch(IOException e){
+      return;
+    }
 
-    if( message == null){
+    if( reader == null || message == null){
+      reader = getReader();
       // Utils.sleep(WAIT_FOR_NEXT_TUPLE);
       return;
     }
@@ -135,6 +98,14 @@ public class RedisTextSpout extends BaseRichSpout {
     
   }
   
+  private BufferedReader getReader(){
+    try{
+      return new BufferedReader(new FileReader(filename));
+    }catch(IOException e){
+      return null;
+    }
+  }
+
   private void measure(){
     if(startTime == -1){
       startTime = System.currentTimeMillis();
