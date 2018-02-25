@@ -63,7 +63,7 @@ class TweetsDownloader():
     def start(self):
         signal.signal(signal.SIGINT, self.handle_sig_int)
         stream = self.api.GetStreamSample()
-        self.file = io.open(self.file_name, 'w') 
+        self.file = io.open(self.file_name, 'a') 
 
         for tweet in stream:
             self.process(tweet)
