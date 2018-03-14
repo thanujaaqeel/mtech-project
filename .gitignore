@@ -2,3 +2,6 @@ python_env/*
 dependency-reduced-pom.xml
 storm-mfp/target
 twitter-input/python_env
+drs/drs_env
+*.csv
+*.pyc

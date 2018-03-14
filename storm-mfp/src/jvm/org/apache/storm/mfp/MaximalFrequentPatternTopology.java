@@ -29,58 +29,57 @@ import org.apache.storm.mfp.bolt.MFPMinerBolt;
 import org.apache.storm.mfp.bolt.RedisReporterBolt;
 
 import java.util.Map;
+import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 import static org.apache.storm.topology.base.BaseWindowedBolt.Count;
+import static org.apache.storm.topology.base.BaseWindowedBolt.Duration;
+
+import org.apache.storm.mfp.metrics.HttpForwardingMetricsConsumer;
 
 public class MaximalFrequentPatternTopology {
 
-  private final int TRANSACTION_WINDOW_SIZE = 10;
+  private final int TRANSACTION_WINDOW_SIZE = 20;
   private final int TRANSACTION_SLIDING_WINDOW_SIZE = 5;
   private final int MFP_MINIMUM_SUPPORT_LEVEL = 2;
 
   public void runOnCluster(String name) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException{
     Config conf = new Config();
-    conf.setDebug(true);
+    conf.registerMetricsConsumer(HttpForwardingMetricsConsumer.class, "http://localhost:5000/metric", 1);
+    // conf.setDebug(true);
     conf.setNumWorkers(3);
 
     StormSubmitter.submitTopologyWithProgressBar(name, conf, buildTopology());
-  }
-
-  public void runOnLocalCluster(){
-    Config conf = new Config();
-    conf.setDebug(true);
-
-    LocalCluster cluster = new LocalCluster();
-    cluster.submitTopology("test", conf, buildTopology());
-
-    Utils.sleep(10000);
-
-    cluster.killTopology("test");
-    cluster.shutdown();
   }
 
   private StormTopology buildTopology(){
     TopologyBuilder builder = new TopologyBuilder();
 
     builder.setSpout("transaction", transactionsSpout(), 1);
-    builder.setBolt("mfp", minerBolt(), 3).shuffleGrouping("transaction");
-    builder.setBolt("reporter", reporterBolt(), 1).shuffleGrouping("mfp");
+
+    builder.setBolt("mfp", minerBolt(), 1)
+           .setNumTasks(4)
+           .shuffleGrouping("transaction");
+
+    builder.setBolt("reporter", reporterBolt(), 1)
+           .shuffleGrouping("mfp");
     return builder.createTopology();
   }
 
   private IWindowedBolt minerBolt(){
     MFPMinerBolt minerBolt = new MFPMinerBolt(MFP_MINIMUM_SUPPORT_LEVEL);
     IWindowedBolt bolt = minerBolt.withWindow(Count.of(TRANSACTION_WINDOW_SIZE), Count.of(TRANSACTION_SLIDING_WINDOW_SIZE));
+    // IWindowedBolt bolt = minerBolt.withTumblingWindow(new Duration(1, TimeUnit.SECONDS));
     return bolt;
   }
 
   private IRichSpout transactionsSpout(){
-    // RedisTextSpout spout = new RedisTextSpout("localhost", 6379, "MFP_STREAM");
-    FileTextSpout spout = new FileTextSpout("/Users/thanuja/mtech-project/twitter-input/tweets_1.txt");
+    RedisTextSpout spout = new RedisTextSpout("localhost", 6379, "MFP_STREAM");
+    // FileTextSpout spout = new FileTextSpout("/Users/aqeel/mtech-project/twitter-input/tweets_1.txt");
     return spout;
   }
 
@@ -91,14 +90,6 @@ public class MaximalFrequentPatternTopology {
 
   public static void main(String[] args) throws Exception {
     MaximalFrequentPatternTopology mfpTopology = new MaximalFrequentPatternTopology();
-
-    boolean simulateLocalCluster = !(args != null && args.length > 0);
-
-    if( simulateLocalCluster ){
-      mfpTopology.runOnLocalCluster();
-    }else{
-      mfpTopology.runOnCluster(args[0]);
-    }
+    mfpTopology.runOnCluster(args[0]);
   }
-
 }

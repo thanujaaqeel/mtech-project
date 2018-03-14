@@ -1,0 +1,10 @@
+To clear zookeeper:
+-------
+~/zookeeper-3.4.11/bin/zkCli.sh 
+rmr /storm
+
+
+
+To activate twitter env:
+---------
+source python_env/bin/activate

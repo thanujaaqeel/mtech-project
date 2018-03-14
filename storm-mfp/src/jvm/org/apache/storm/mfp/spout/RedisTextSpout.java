@@ -125,27 +125,25 @@ public class RedisTextSpout extends BaseRichSpout {
     String message = queue.poll();
 
     if( message == null){
-      LOG.info("Sleeping for next item");
+      // LOG.info("Sleeping for next item");
       Utils.sleep(WAIT_FOR_NEXT_TUPLE);
       return;
     }
 
-    // LOG.info("Emitting tuple: {}", message);
     _collector.emit(new Values(message));
     measure();
-    
   }
-  
+
   private void measure(){
     if(startTime == -1){
       startTime = System.currentTimeMillis();
     }
     count ++;
-    
+
     long difference = (System.currentTimeMillis() - startTime)/1000;
 
     if(difference >= 1){
-      LOG.info("Total messages in 1 second: {}", count);
+      // LOG.info("Total messages in 1 second: {}", count);
       count = 0; //reset
       startTime = -1;
     }

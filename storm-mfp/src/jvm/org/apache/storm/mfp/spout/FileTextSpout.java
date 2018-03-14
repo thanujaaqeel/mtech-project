@@ -46,7 +46,7 @@ public class FileTextSpout extends BaseRichSpout {
   boolean _isDistributed;
   SpoutOutputCollector _collector;
 
-  final int RATE = 50;
+  final int RATE = 10;
 
   BufferedReader reader;
   
@@ -92,7 +92,6 @@ public class FileTextSpout extends BaseRichSpout {
       return;
     }
 
-    LOG.info("Emitting tuple: {}", message);
     _collector.emit(new Values(message));
 
     measure();

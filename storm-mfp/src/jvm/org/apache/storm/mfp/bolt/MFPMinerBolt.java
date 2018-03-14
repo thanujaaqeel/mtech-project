@@ -43,7 +43,9 @@ public class MFPMinerBolt extends BaseWindowedBolt {
 
     @Override
     public void execute(TupleWindow inputWindow) {
-        findMaximalFrequentPatterns(getTransactions(inputWindow));
+        List<List<String>> transactions = getTransactions(inputWindow);
+        ItemSets mfpItemSets = findMaximalFrequentPatterns(transactions);
+        emit(transactions, mfpItemSets);
     }
 
     @Override
@@ -51,10 +53,9 @@ public class MFPMinerBolt extends BaseWindowedBolt {
         declarer.declare(new Fields("size", "transactions", "item_sets"));
     }
 
-    private void findMaximalFrequentPatterns(List<List<String>> transactions){
+    private ItemSets findMaximalFrequentPatterns(List<List<String>> transactions){
         MetaData metaData = new MetaData(transactions);
-        ItemSets mfpItemSets = ruleMiner.findMaxPatterns(transactions, metaData.getUniqueItems());
-        emit(transactions, mfpItemSets);
+        return ruleMiner.findMaxPatterns(transactions, metaData.getUniqueItems());
     }
 
     private void emit(List<List<String>> transactions, ItemSets mfpItemSets){
@@ -68,7 +69,7 @@ public class MFPMinerBolt extends BaseWindowedBolt {
     private List<List<String>> getTransactions(TupleWindow tupleWindow){
         List<Tuple> tuplesInWindow = tupleWindow.get();
         List<List<String>> transactions = new ArrayList<>();
-        
+
         for (Tuple tuple : tuplesInWindow) {
             transactions.add(getTransaction(tuple));
         }
@@ -80,6 +81,7 @@ public class MFPMinerBolt extends BaseWindowedBolt {
 
         for(List<String> transaction : transactions){
           builder.append(String.join(" ", transaction));
+          builder.append("\t");
         }
         return builder.toString();
     }
@@ -89,6 +91,7 @@ public class MFPMinerBolt extends BaseWindowedBolt {
 
         for(ItemSet itemSet : itemSets.getSets()){
           builder.append(itemSet.toString());
+          builder.append("\t");
         }
         return builder.toString();
     }
