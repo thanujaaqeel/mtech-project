@@ -47,25 +47,46 @@ public class MaximalFrequentPatternTopology {
   private final int TRANSACTION_SLIDING_WINDOW_SIZE = 5;
   private final int MFP_MINIMUM_SUPPORT_LEVEL = 2;
 
-  public void runOnCluster(String name) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException{
+  public void runOnCluster(String[] args) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException{
     Config conf = new Config();
-    conf.registerMetricsConsumer(HttpForwardingMetricsConsumer.class, "http://localhost:5000/metric", 1);
-    // conf.setDebug(true);
-    conf.setNumWorkers(3);
 
-    StormSubmitter.submitTopologyWithProgressBar(name, conf, buildTopology());
+    String name = args[0];
+    int mfpParallelismHint = 1;
+    int mfpNumTasks = 4;
+    int numWorkers = 1;
+    String redisHost = "localhost";
+
+    if (args.length >= 2){
+      mfpParallelismHint = Integer.parseInt(args[1]);
+    }
+    if (args.length >= 3){
+      mfpNumTasks = Integer.parseInt(args[2]);
+    }
+
+    if (args.length >= 4){
+      numWorkers = Integer.parseInt(args[3]);
+    }
+
+    if (args.length >= 5){
+      redisHost = args[4];
+    }
+
+    conf.registerMetricsConsumer(HttpForwardingMetricsConsumer.class, "http://localhost:5000/metric", 1);
+    conf.setNumWorkers(numWorkers);
+
+    StormSubmitter.submitTopologyWithProgressBar(name, conf, buildTopology(mfpParallelismHint, mfpNumTasks, redisHost));
   }
 
-  private StormTopology buildTopology(){
+  private StormTopology buildTopology(int mfpParallelismHint, int mfpNumTasks, String redisHost){
     TopologyBuilder builder = new TopologyBuilder();
 
-    builder.setSpout("transaction", transactionsSpout(), 1);
+    builder.setSpout("transaction", transactionsSpout(redisHost), 1);
 
-    builder.setBolt("mfp", minerBolt(), 1)
-           .setNumTasks(4)
+    builder.setBolt("mfp", minerBolt(), mfpParallelismHint)
+           .setNumTasks(mfpNumTasks)
            .shuffleGrouping("transaction");
 
-    builder.setBolt("reporter", reporterBolt(), 1)
+    builder.setBolt("reporter", reporterBolt(redisHost), 1)
            .shuffleGrouping("mfp");
     return builder.createTopology();
   }
@@ -77,19 +98,20 @@ public class MaximalFrequentPatternTopology {
     return bolt;
   }
 
-  private IRichSpout transactionsSpout(){
-    RedisTextSpout spout = new RedisTextSpout("localhost", 6379, "MFP_STREAM");
+  private IRichSpout transactionsSpout(String redisHost){
+    RedisTextSpout spout = new RedisTextSpout(redisHost, 6379, "MFP_STREAM");
     // FileTextSpout spout = new FileTextSpout("/Users/aqeel/mtech-project/twitter-input/tweets_1.txt");
     return spout;
   }
 
-  private RedisReporterBolt reporterBolt(){
-    RedisReporterBolt bolt = new RedisReporterBolt("localhost", 6379, "MFP_OUTPUT_STREAM");
+  private RedisReporterBolt reporterBolt(String redisHost){
+    RedisReporterBolt bolt = new RedisReporterBolt(redisHost, 6379, "MFP_OUTPUT_STREAM");
     return bolt;
   }
 
   public static void main(String[] args) throws Exception {
     MaximalFrequentPatternTopology mfpTopology = new MaximalFrequentPatternTopology();
-    mfpTopology.runOnCluster(args[0]);
+    mfpTopology.runOnCluster(args);
+    // storm rebalance mfp -e mfp=2
   }
 }

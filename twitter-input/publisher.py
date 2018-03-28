@@ -3,47 +3,68 @@ import time
 import datetime
 
 class Publisher():
-  def __init__(self, channel, rate_key):
+  def __init__(self, channel, rate_range, rate_step, rate_interval):
     self.channel = channel
     self.redis_cli = redis.Redis()
-    self.rate_key = rate_key
+    self.rate_range = rate_range
+    self.rate_step = rate_step
+    self.rate_interval = rate_interval
     self.count = 0
     self.start_time = None
 
   def publish(self, message):
     self.redis_cli.publish(self.channel, message)
 
-  def start_publishing_from(self, source_file):
-    with open(source_file, "r") as fp:
-      for line in fp:
+  def start_constant_rate_publishing(self, source_file, rate, duration):
+    self.start_time = datetime.datetime.now()
+    should_publish = True
+    while should_publish:
+      with open(source_file, "r") as fp:
+        for line in fp:
           self.publish(line)
+
           self.count += 1
-          time.sleep(1.0/self.rate())
-          self.measure_rate()
+          time.sleep(1.0/rate)
+          now = datetime.datetime.now()
+          time_diff = (now - self.start_time).total_seconds()
+          if time_diff > duration:
+            should_publish = False
+            break
 
-  def rate(self):
-    return int(self.redis_cli.get(self.rate_key) or 10)
 
-  def measure_rate(self):
-    if self.start_time == None:
-      self.start_time = datetime.datetime.now()
+  def start_publishing_from(self, source_file):
+    start_rate, end_rate = self.rate_range
+    current_rate = start_rate
+    self.start_time = datetime.datetime.now()
 
-    measure_after = 1000
-    if self.count == measure_after:
-      time_diff = datetime.datetime.now() - self.start_time
+    while True:
+      with open(source_file, "r") as fp:
+        for line in fp:
+            self.publish(line)
 
-      print "Total tweets in 1 second ", float(measure_after)/time_diff.total_seconds()
+            self.count += 1
+            time.sleep(1.0/current_rate)
+            now = datetime.datetime.now()
+            time_diff = (now - self.start_time).total_seconds()
+            if time_diff >= self.rate_interval:
+              current_rate += self.rate_step
+              self.start_time = now
+              self.count = 0
+              print "current_rate: %s" % current_rate
+              if current_rate > end_rate or current_rate <= start_rate:
+                self.rate_step = self.rate_step*-1
 
-      self.count = 0
-      self.start_time = datetime.datetime.now()
 
 CHANNEL = "MFP_STREAM"
 FILE = "samples.txt"
-RATE_KEY = "MFP_STREAM_RATE"
+
+RATE_RANGE = (100, 3500)
+RATE_STEP = 50
+RATE_INTERVAL_SECONDS = 10
 
 if __name__ == "__main__":
-  publisher = Publisher(CHANNEL, RATE_KEY)
+  publisher = Publisher(CHANNEL, RATE_RANGE, RATE_STEP, RATE_INTERVAL_SECONDS)
 
   print "Starting publish..."
-  while True:
-    publisher.start_publishing_from(FILE)
+  publisher.start_constant_rate_publishing(FILE, 100, 6000000)
+  #publisher.start_publishing_from(FILE)

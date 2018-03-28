@@ -5,7 +5,7 @@ from statsd import StatsClient
 BOLTS = ['mfp', 'reporter']
 SPOUTS = ['transaction']
 COMPONENTS = set(BOLTS + SPOUTS)
-DATA_POINTS = ['component_id', 'population', 'arrival_rate', 'sojourn_time']
+DATA_POINTS = ['component_id', 'arrival_rate', 'sojourn_time']
 
 class Metrics():
   def __init__(self, dictionary):
@@ -35,7 +35,7 @@ class MetricProcessor():
   def __init__(self, metric_dict):
     self.meta = Meta(metric_dict['meta'])
     self.metrics = Metrics(metric_dict['metrics'])
-    self.logger = MetricLogger("metrics_2.csv", DATA_POINTS)
+    self.logger = MetricLogger("metrics_4.csv", DATA_POINTS)
     self.statsd = StatsClient()
 
   @property
