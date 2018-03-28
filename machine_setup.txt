@@ -1,0 +1,58 @@
+Install java
+---------------
+sudo su
+echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee /etc/apt/sources.list.d/webupd8team-java.list
+echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main" | tee -a /etc/apt/sources.list.d/webupd8team-java.list
+apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys EEA14886
+apt-get update
+apt-get install oracle-java8-installer
+
+Add user
+-------
+adduser drs
+
+visudo
+drs     ALL=(ALL:ALL) ALL
+
+
+Install zookeeper
+------------------
+cd /opt
+sudo wget http://www-eu.apache.org/dist/zookeeper/zookeeper-3.4.11/zookeeper-3.4.11.tar.gz
+sudo tar xzvf zookeeper-3.4.11.tar.gz
+sudo chown -R drs:drs zookeeper-3.4.11
+vim zookeeper-3.4.11/conf/zoo.cfg
+tickTime=2000
+dataDir=/opt/zookeeper-3.4.11/data
+clientPort=2181
+initLimit=5
+syncLimit=2
+cd zookeeper-3.4.11 && bin/zkServer.sh start
+
+
+Install storm
+---------------
+cd /opt
+sudo wget https://s3.ap-south-1.amazonaws.com/personal.aqeel.com/apache-storm-2.0.0-SNAPSHOT.tar.gz
+sudo tar xzvf apache-storm-2.0.0-SNAPSHOT.tar.gz
+sudo chown -R drs:drs apache-storm-2.0.0-SNAPSHOT
+
+
+Setup PATH
+----------------
+export PATH="$PATH:/opt/apache-storm-2.0.0-SNAPSHOT/bin"
+export FLASK_APP='app.py'
+export PATH="$PATH:/opt/apache-maven-3.5.3/bin"
+
+
+Install Redis
+-------------
+sudo apt-get update && sudo apt-get upgrade
+sudo apt-get install software-properties-common
+sudo vim /etc/apt/sources.list.d/dotdeb.list
+  deb http://ftp.utexas.edu/dotdeb/ stable all
+  deb-src http://ftp.utexas.edu/dotdeb/ stable all
+wget https://www.dotdeb.org/dotdeb.gpg
+sudo apt-key add dotdeb.gpg
+sudo apt-get update
+sudo apt-get install redis-server

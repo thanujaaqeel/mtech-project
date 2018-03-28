@@ -1,0 +1,20 @@
+storm.zookeeper.servers:
+ - "10.148.0.2"
+
+storm.local.dir: "data"
+
+nimbus.seeds: ["10.148.0.2"]
+
+supervisor.slots.ports:
+- 6700
+- 6701
+- 6702
+- 6703
+
+# topology.debug: true
+
+topology.builtin.metrics.bucket.size.secs: 2
+topology.metrics.consumer.register:
+  - class: "org.apache.storm.metric.LoggingMetricsConsumer"
+    max.retain.metric.tuples: 100
+    parallelism.hint: 1
