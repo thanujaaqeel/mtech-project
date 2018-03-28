@@ -7,9 +7,6 @@ nimbus.seeds: ["10.148.0.2"]
 
 supervisor.slots.ports:
 - 6700
-- 6701
-- 6702
-- 6703
 
 # topology.debug: true
 
