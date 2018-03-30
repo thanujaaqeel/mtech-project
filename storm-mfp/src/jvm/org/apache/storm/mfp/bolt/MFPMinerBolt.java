@@ -43,6 +43,7 @@ public class MFPMinerBolt extends BaseWindowedBolt {
 
     @Override
     public void execute(TupleWindow inputWindow) {
+        LOG.info("Executing tupleWindow {}", inputWindow);
         List<List<String>> transactions = getTransactions(inputWindow);
         ItemSets mfpItemSets = findMaximalFrequentPatterns(transactions);
         emit(transactions, mfpItemSets);
@@ -64,6 +65,7 @@ public class MFPMinerBolt extends BaseWindowedBolt {
         String itemSetsString = getItemSetsAsString(mfpItemSets);
 
         collector.emit(new Values(transactionsSize, transactionsString, itemSetsString));
+        LOG.info("Emitted {}", transactionsString);
     }
 
     private List<List<String>> getTransactions(TupleWindow tupleWindow){

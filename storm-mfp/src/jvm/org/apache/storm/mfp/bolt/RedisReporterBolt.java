@@ -49,13 +49,17 @@ public class RedisReporterBolt extends BaseRichBolt {
     String transactionsString = tuple.getString(1);
     String itemSetsString = tuple.getString(2);
     String reportString = transactionsSize + "\n" + transactionsString + "\n" + itemSetsString;
+    LOG.info("Reporting {}", reportString);
     publish(reportString);
+
   }
 
   private void publish(String message){
     Jedis jedis = pool.getResource();
     try {
       jedis.publish(channel, message);
+    } catch (Exception e){
+        LOG.error(e.getMessage());
     } finally {
       pool.returnResource(jedis);
     }

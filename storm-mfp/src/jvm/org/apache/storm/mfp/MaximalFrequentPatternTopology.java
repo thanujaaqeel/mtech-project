@@ -43,57 +43,83 @@ import org.apache.storm.mfp.metrics.HttpForwardingMetricsConsumer;
 
 public class MaximalFrequentPatternTopology {
 
-  private final int TRANSACTION_WINDOW_SIZE = 20;
-  private final int TRANSACTION_SLIDING_WINDOW_SIZE = 5;
-  private final int MFP_MINIMUM_SUPPORT_LEVEL = 2;
+  private static final String TRANSACTION_WINDOW_SIZE = "20";
+  private static final String TRANSACTION_SLIDING_WINDOW_SIZE = "5";
+  private static final String MFP_MINIMUM_SUPPORT_LEVEL = "2";
 
-  public void runOnCluster(String[] args) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException{
-    Config conf = new Config();
+  private Map<String, String> options;
 
-    String name = args[0];
-    int mfpParallelismHint = 1;
-    int mfpNumTasks = 4;
-    int numWorkers = 1;
-    String redisHost = "localhost";
-
-    if (args.length >= 2){
-      mfpParallelismHint = Integer.parseInt(args[1]);
-    }
-    if (args.length >= 3){
-      mfpNumTasks = Integer.parseInt(args[2]);
-    }
-
-    if (args.length >= 4){
-      numWorkers = Integer.parseInt(args[3]);
-    }
-
-    if (args.length >= 5){
-      redisHost = args[4];
-    }
-
-    conf.registerMetricsConsumer(HttpForwardingMetricsConsumer.class, "http://localhost:5000/metric", 1);
-    conf.setNumWorkers(numWorkers);
-
-    StormSubmitter.submitTopologyWithProgressBar(name, conf, buildTopology(mfpParallelismHint, mfpNumTasks, redisHost));
+  public MaximalFrequentPatternTopology(Map<String, String> options){
+    this.options = options;
   }
 
-  private StormTopology buildTopology(int mfpParallelismHint, int mfpNumTasks, String redisHost){
+  public void runOnCluster() throws AlreadyAliveException, InvalidTopologyException, AuthorizationException{
+    Config conf = new Config();
+
+    conf.registerMetricsConsumer(HttpForwardingMetricsConsumer.class, "http://" + getHost() + ":5000/metric", 1);
+    conf.setNumWorkers(getWorkers());
+
+    StormSubmitter.submitTopologyWithProgressBar(getName(), conf, buildTopology());
+  }
+
+  private String getName(){
+    return options.get("name").trim();
+  }
+
+  private String getHost(){
+    return options.get("host").trim();
+  }
+
+  private int getWorkers(){
+    return Integer.parseInt(options.get("workers"));
+  }
+
+  private int getExecutors(String component){
+    return Integer.parseInt(options.get(component).split(",")[0]);
+  }
+
+  private int getTasks(String component){
+    return Integer.parseInt(options.get(component).split(",")[1]);
+  }
+
+  private int getWindowSize(){
+    return Integer.parseInt(options.get("windowSize"));
+  }
+
+  private int getSlidingWindowSize(){
+    return Integer.parseInt(options.get("slidingWindowSize"));
+  }
+
+  private int getMfpSupportLevel(){
+    return Integer.parseInt(options.get("mfpSupportLevel"));
+  }
+
+  private StormTopology buildTopology(){
     TopologyBuilder builder = new TopologyBuilder();
 
-    builder.setSpout("transaction", transactionsSpout(redisHost), 1);
+    builder.setSpout("transaction",
+                     transactionsSpout(getHost()),
+                     getExecutors("transaction"))
+            .setNumTasks(getTasks("transaction"));
 
-    builder.setBolt("mfp", minerBolt(), mfpParallelismHint)
-           .setNumTasks(mfpNumTasks)
+    builder.setBolt("mfp",
+                    minerBolt(),
+                    getExecutors("mfp"))
+           .setNumTasks(getTasks("mfp"))
            .shuffleGrouping("transaction");
 
-    builder.setBolt("reporter", reporterBolt(redisHost), 1)
+    builder.setBolt("reporter",
+                    reporterBolt(getHost()),
+                    getExecutors("reporter"))
+           .setNumTasks(getTasks("reporter"))
            .shuffleGrouping("mfp");
+
     return builder.createTopology();
   }
 
   private IWindowedBolt minerBolt(){
-    MFPMinerBolt minerBolt = new MFPMinerBolt(MFP_MINIMUM_SUPPORT_LEVEL);
-    IWindowedBolt bolt = minerBolt.withWindow(Count.of(TRANSACTION_WINDOW_SIZE), Count.of(TRANSACTION_SLIDING_WINDOW_SIZE));
+    MFPMinerBolt minerBolt = new MFPMinerBolt(getMfpSupportLevel());
+    IWindowedBolt bolt = minerBolt.withWindow(Count.of(getWindowSize()), Count.of(getSlidingWindowSize()));
     // IWindowedBolt bolt = minerBolt.withTumblingWindow(new Duration(1, TimeUnit.SECONDS));
     return bolt;
   }
@@ -109,9 +135,39 @@ public class MaximalFrequentPatternTopology {
     return bolt;
   }
 
+  // static methods
+  private static Map<String, String> buildDefaultRunOptions(){
+    HashMap<String, String> map = new HashMap();
+    map.put("name", "mfp");
+    map.put("workers", "2");
+    map.put("host", "localhost");
+    map.put("transaction", "1,1");
+    map.put("mfp", "1,1");
+    map.put("reporter", "1,1");
+    map.put("windowSize", TRANSACTION_WINDOW_SIZE);
+    map.put("slidingWindowSize", TRANSACTION_SLIDING_WINDOW_SIZE);
+    map.put("mfpSupportLevel", MFP_MINIMUM_SUPPORT_LEVEL);
+
+    return map;
+  }
+
+  private static Map<String, String> buildRunOptions(String[] args){
+    Map<String, String> runOptions = buildDefaultRunOptions();
+
+    for(String arg : args){
+      String[] parts = arg.split(":");
+      String option = parts[0].trim();
+      String value = parts[1].trim();
+      runOptions.put(option, value);
+    }
+    return runOptions;
+  }
+
   public static void main(String[] args) throws Exception {
-    MaximalFrequentPatternTopology mfpTopology = new MaximalFrequentPatternTopology();
-    mfpTopology.runOnCluster(args);
+    Map<String, String> runOptions = buildRunOptions(args);
+    System.out.println(runOptions.toString());
+    MaximalFrequentPatternTopology mfpTopology = new MaximalFrequentPatternTopology(runOptions);
+    mfpTopology.runOnCluster();
     // storm rebalance mfp -e mfp=2
   }
 }
