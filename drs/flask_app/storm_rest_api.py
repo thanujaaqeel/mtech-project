@@ -28,6 +28,11 @@ class TopologyResponse(Response):
   def get_bolt(self, name):
     return [bolt for bolt in self.bolts if bolt["boltId"] == name][0]
 
+class ComponentResponse(Response):
+  @property
+  def executors(self):
+    return self.json["executors"]
+
 class ApiClient():
   REST_API_BASE = "http://localhost:8080/api/v1"
 
@@ -38,3 +43,7 @@ class ApiClient():
   def get_topology(self, topology_id):
     result = requests.get(self.REST_API_BASE + "/topology/%s" % topology_id)
     return TopologyResponse(result)
+
+  def get_component(self, component, topology_id):
+    result = requests.get(self.REST_API_BASE + "/topology/%s/component/%s" % (topology_id, component))
+    return ComponentResponse(result)

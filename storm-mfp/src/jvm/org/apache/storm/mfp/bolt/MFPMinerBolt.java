@@ -10,12 +10,15 @@ import org.apache.storm.tuple.Values;
 import org.apache.storm.windowing.TupleWindow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.storm.utils.Utils;
 
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 import com.github.chen0040.fpm.AssocRuleMiner;
 import com.github.chen0040.fpm.apriori.Apriori;
@@ -29,9 +32,11 @@ public class MFPMinerBolt extends BaseWindowedBolt {
     private OutputCollector collector;
     private AssocRuleMiner ruleMiner;
     private int minimumSupportLevel;
+    private int delay;
 
-    public MFPMinerBolt(int minimumSupportLevel){
+    public MFPMinerBolt(int minimumSupportLevel, int delay){
         this.minimumSupportLevel = minimumSupportLevel;
+        this.delay = delay;
     }
 
     @Override
@@ -43,7 +48,8 @@ public class MFPMinerBolt extends BaseWindowedBolt {
 
     @Override
     public void execute(TupleWindow inputWindow) {
-        LOG.info("Executing tupleWindow {}", inputWindow);
+        // LOG.info("Executing tupleWindow {}", inputWindow);
+        delayBolt();
         List<List<String>> transactions = getTransactions(inputWindow);
         ItemSets mfpItemSets = findMaximalFrequentPatterns(transactions);
         emit(transactions, mfpItemSets);
@@ -52,6 +58,27 @@ public class MFPMinerBolt extends BaseWindowedBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("size", "transactions", "item_sets"));
+    }
+
+    private void delayBolt(){
+        long startTime = System.currentTimeMillis();
+        delayViaNetwork();
+        long difference = (System.currentTimeMillis() - startTime);
+        LOG.info("delayBolt: {}", difference);
+    }
+    private void delayViaSleep(){
+        Utils.sleep(delay);
+    }
+
+    private void delayViaNetwork(){
+        try {
+            URL url = new URL("https://en.wikipedia.org/static/images/project-logos/enwiki-2x.png");
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            int response = con.getResponseCode();
+        } catch (Exception e) {
+            LOG.info("delayViaNetwork: {}", e.getMessage());
+        }
     }
 
     private ItemSets findMaximalFrequentPatterns(List<List<String>> transactions){
@@ -65,7 +92,7 @@ public class MFPMinerBolt extends BaseWindowedBolt {
         String itemSetsString = getItemSetsAsString(mfpItemSets);
 
         collector.emit(new Values(transactionsSize, transactionsString, itemSetsString));
-        LOG.info("Emitted {}", transactionsString);
+        // LOG.info("Emitted {}", transactionsString);
     }
 
     private List<List<String>> getTransactions(TupleWindow tupleWindow){

@@ -48,7 +48,7 @@ public class RedisTextSpout extends BaseRichSpout {
 
   LinkedBlockingQueue<String> queue;
   final int MAX_QUEUE_LENGTH = 100000;
-  final int WAIT_FOR_NEXT_TUPLE = 1;
+  final int WAIT_FOR_NEXT_TUPLE = 5;
 
   JedisPool pool;
 
@@ -58,7 +58,7 @@ public class RedisTextSpout extends BaseRichSpout {
 
   int count;
   long startTime;
-  
+
   public RedisTextSpout(String host, int port, String channel) {
     this(true);
 
@@ -89,7 +89,7 @@ public class RedisTextSpout extends BaseRichSpout {
 
         @Override
         public void onMessage(String _channel, String message) {
-          LOG.info("onMessage: "+ message.trim() );
+          // LOG.info("onMessage: "+ message.trim() );
           queue.offer(message.trim());
         }
       };
@@ -124,18 +124,18 @@ public class RedisTextSpout extends BaseRichSpout {
 
   @Override
   public void nextTuple() {
-    LOG.info("nextTuple begin");
+    // LOG.info("nextTuple begin");
     String message = queue.poll();
 
     if( message == null){
-      LOG.info("Sleeping for next item");
+      // LOG.info("Sleeping for next item");
       Utils.sleep(WAIT_FOR_NEXT_TUPLE);
       return;
     }
-    LOG.info("nextTuple emitting {}", message);
+    // LOG.info("nextTuple emitting {}", message);
     _collector.emit(new Values(message));
-    LOG.info("nextTuple emitted {}", message);
-    measure();
+    // LOG.info("nextTuple emitted {}", message);
+    // measure();
   }
 
   private void measure(){
@@ -147,7 +147,7 @@ public class RedisTextSpout extends BaseRichSpout {
     long difference = (System.currentTimeMillis() - startTime)/1000;
 
     if(difference >= 1){
-      LOG.info("Total messages in 1 second: {}", count);
+      // LOG.info("Total messages in 1 second: {}", count);
       count = 0; //reset
       startTime = -1;
     }

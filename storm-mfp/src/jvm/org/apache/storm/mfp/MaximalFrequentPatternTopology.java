@@ -56,10 +56,18 @@ public class MaximalFrequentPatternTopology {
   public void runOnCluster() throws AlreadyAliveException, InvalidTopologyException, AuthorizationException{
     Config conf = new Config();
 
-    conf.registerMetricsConsumer(HttpForwardingMetricsConsumer.class, "http://" + getHost() + ":5000/metric", 1);
+    int metrics = getMetrics();
+    if( metrics > 0){
+      conf.registerMetricsConsumer(HttpForwardingMetricsConsumer.class, "http://" + getHost() + ":5000/metric", 1);
+    }
+
     conf.setNumWorkers(getWorkers());
 
     StormSubmitter.submitTopologyWithProgressBar(getName(), conf, buildTopology());
+  }
+
+  private int getMetrics(){
+    return Integer.parseInt(options.get("metrics").trim());
   }
 
   private String getName(){
@@ -94,6 +102,10 @@ public class MaximalFrequentPatternTopology {
     return Integer.parseInt(options.get("mfpSupportLevel"));
   }
 
+  private int getMfpDelay(){
+    return Integer.parseInt(options.get("mfp").split(",")[2]);
+  }
+
   private StormTopology buildTopology(){
     TopologyBuilder builder = new TopologyBuilder();
 
@@ -118,7 +130,7 @@ public class MaximalFrequentPatternTopology {
   }
 
   private IWindowedBolt minerBolt(){
-    MFPMinerBolt minerBolt = new MFPMinerBolt(getMfpSupportLevel());
+    MFPMinerBolt minerBolt = new MFPMinerBolt(getMfpSupportLevel(), getMfpDelay());
     IWindowedBolt bolt = minerBolt.withWindow(Count.of(getWindowSize()), Count.of(getSlidingWindowSize()));
     // IWindowedBolt bolt = minerBolt.withTumblingWindow(new Duration(1, TimeUnit.SECONDS));
     return bolt;
@@ -142,11 +154,12 @@ public class MaximalFrequentPatternTopology {
     map.put("workers", "2");
     map.put("host", "localhost");
     map.put("transaction", "1,1");
-    map.put("mfp", "1,1");
+    map.put("mfp", "1,1,20");
     map.put("reporter", "1,1");
     map.put("windowSize", TRANSACTION_WINDOW_SIZE);
     map.put("slidingWindowSize", TRANSACTION_SLIDING_WINDOW_SIZE);
     map.put("mfpSupportLevel", MFP_MINIMUM_SUPPORT_LEVEL);
+    map.put("metrics", "1");
 
     return map;
   }
