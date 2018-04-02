@@ -3,7 +3,7 @@ package org.apache.storm.mfp.bolt;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseWindowedBolt;
+import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
@@ -26,17 +26,15 @@ import com.github.chen0040.fpm.data.MetaData;
 import com.github.chen0040.fpm.data.ItemSets;
 import com.github.chen0040.fpm.data.ItemSet;
 
-public class MFPMinerBolt extends BaseWindowedBolt {
+public class MFPMinerBolt extends BaseRichBolt {
     private static final Logger LOG = LoggerFactory.getLogger(MFPMinerBolt.class);
 
     private OutputCollector collector;
     private AssocRuleMiner ruleMiner;
     private int minimumSupportLevel;
-    private int delay;
 
-    public MFPMinerBolt(int minimumSupportLevel, int delay){
+    public MFPMinerBolt(int minimumSupportLevel){
         this.minimumSupportLevel = minimumSupportLevel;
-        this.delay = delay;
     }
 
     @Override
@@ -47,12 +45,11 @@ public class MFPMinerBolt extends BaseWindowedBolt {
     }
 
     @Override
-    public void execute(TupleWindow inputWindow) {
-        // LOG.info("Executing tupleWindow {}", inputWindow);
-        delayBolt();
-        List<List<String>> transactions = getTransactions(inputWindow);
+    public void execute(Tuple tuple) {
+        delayBolt(tuple);
+        List<List<String>> transactions = getTransactions(tuple);
         ItemSets mfpItemSets = findMaximalFrequentPatterns(transactions);
-        emit(transactions, mfpItemSets);
+        emit(tuple, transactions, mfpItemSets);
     }
 
     @Override
@@ -60,25 +57,19 @@ public class MFPMinerBolt extends BaseWindowedBolt {
         declarer.declare(new Fields("size", "transactions", "item_sets"));
     }
 
-    private void delayBolt(){
+    private void delayBolt(Tuple tuple){
+        int delay = getDelay(tuple);
+        if (delay < 1){
+            return;
+        }
+
         long startTime = System.currentTimeMillis();
-        delayViaNetwork();
+        delayViaSleep(delay);
         long difference = (System.currentTimeMillis() - startTime);
         LOG.info("delayBolt: {}", difference);
     }
-    private void delayViaSleep(){
+    private void delayViaSleep(int delay){
         Utils.sleep(delay);
-    }
-
-    private void delayViaNetwork(){
-        try {
-            URL url = new URL("https://en.wikipedia.org/static/images/project-logos/enwiki-2x.png");
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-            int response = con.getResponseCode();
-        } catch (Exception e) {
-            LOG.info("delayViaNetwork: {}", e.getMessage());
-        }
     }
 
     private ItemSets findMaximalFrequentPatterns(List<List<String>> transactions){
@@ -86,21 +77,27 @@ public class MFPMinerBolt extends BaseWindowedBolt {
         return ruleMiner.findMaxPatterns(transactions, metaData.getUniqueItems());
     }
 
-    private void emit(List<List<String>> transactions, ItemSets mfpItemSets){
+    private void emit(Tuple tuple, List<List<String>> transactions, ItemSets mfpItemSets){
         int transactionsSize = transactions.size();
         String transactionsString = getTransactionsString(transactions);
         String itemSetsString = getItemSetsAsString(mfpItemSets);
 
-        collector.emit(new Values(transactionsSize, transactionsString, itemSetsString));
+        collector.emit(tuple, new Values(transactionsSize, transactionsString, itemSetsString));
+        collector.ack(tuple);
         // LOG.info("Emitted {}", transactionsString);
     }
 
-    private List<List<String>> getTransactions(TupleWindow tupleWindow){
-        List<Tuple> tuplesInWindow = tupleWindow.get();
+    private int getDelay(Tuple tuple){
+        int delay = Integer.parseInt(tuple.getString(0).split("\t")[0]);
+        return delay;
+    }
+
+    private List<List<String>> getTransactions(Tuple tuple){
+        String[] rawTransactions = tuple.getString(0).split("\t");
         List<List<String>> transactions = new ArrayList<>();
 
-        for (Tuple tuple : tuplesInWindow) {
-            transactions.add(getTransaction(tuple));
+        for (int i=1; i<rawTransactions.length; i++) {
+            transactions.add(getTransaction(rawTransactions[i]));
         }
         return transactions;
     }
@@ -125,8 +122,7 @@ public class MFPMinerBolt extends BaseWindowedBolt {
         return builder.toString();
     }
 
-    private List<String> getTransaction(Tuple tuple){
-        String rawTransaction = (String) tuple.getValue(0);
+    private List<String> getTransaction(String rawTransaction){
         String[] tokens = rawTransaction.split("\\s+");
         return Arrays.asList(tokens);
     }

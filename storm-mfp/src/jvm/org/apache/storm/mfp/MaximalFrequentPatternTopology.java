@@ -102,10 +102,6 @@ public class MaximalFrequentPatternTopology {
     return Integer.parseInt(options.get("mfpSupportLevel"));
   }
 
-  private int getMfpDelay(){
-    return Integer.parseInt(options.get("mfp").split(",")[2]);
-  }
-
   private StormTopology buildTopology(){
     TopologyBuilder builder = new TopologyBuilder();
 
@@ -129,11 +125,11 @@ public class MaximalFrequentPatternTopology {
     return builder.createTopology();
   }
 
-  private IWindowedBolt minerBolt(){
-    MFPMinerBolt minerBolt = new MFPMinerBolt(getMfpSupportLevel(), getMfpDelay());
-    IWindowedBolt bolt = minerBolt.withWindow(Count.of(getWindowSize()), Count.of(getSlidingWindowSize()));
+  private MFPMinerBolt minerBolt(){
+    MFPMinerBolt minerBolt = new MFPMinerBolt(getMfpSupportLevel());
+    // IWindowedBolt bolt = minerBolt.withWindow(Count.of(getWindowSize()), Count.of(getSlidingWindowSize()));
     // IWindowedBolt bolt = minerBolt.withTumblingWindow(new Duration(1, TimeUnit.SECONDS));
-    return bolt;
+    return minerBolt;
   }
 
   private IRichSpout transactionsSpout(String redisHost){
@@ -154,7 +150,7 @@ public class MaximalFrequentPatternTopology {
     map.put("workers", "2");
     map.put("host", "localhost");
     map.put("transaction", "1,1");
-    map.put("mfp", "1,1,20");
+    map.put("mfp", "1,1");
     map.put("reporter", "1,1");
     map.put("windowSize", TRANSACTION_WINDOW_SIZE);
     map.put("slidingWindowSize", TRANSACTION_SLIDING_WINDOW_SIZE);
