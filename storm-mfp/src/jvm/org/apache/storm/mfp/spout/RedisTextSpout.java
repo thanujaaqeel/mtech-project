@@ -26,6 +26,7 @@ import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.apache.storm.utils.Utils;
+import org.apache.storm.metric.api.CountMetric;
 
 import java.util.HashMap;
 import java.util.Random;
@@ -56,8 +57,7 @@ public class RedisTextSpout extends BaseRichSpout {
   int port;
   String channel;
 
-  int count;
-  long startTime;
+  private transient CountMetric arrivalCountMetric;
 
   public RedisTextSpout(String host, int port, String channel) {
     this(true);
@@ -65,14 +65,12 @@ public class RedisTextSpout extends BaseRichSpout {
     this.host = host;
     this.port = port;
     this.channel = channel;
-    this.count = 0; 
-    this.startTime = -1;
   }
 
   public RedisTextSpout(boolean isDistributed) {
     _isDistributed = isDistributed;
   }
-  
+
   class ListenerThread extends Thread {
     LinkedBlockingQueue<String> queue;
     JedisPool pool;
@@ -116,6 +114,9 @@ public class RedisTextSpout extends BaseRichSpout {
     ListenerThread listener = new ListenerThread(queue, pool, channel);
     listener.start();
 
+    arrivalCountMetric = new CountMetric();
+    context.registerMetric("arrival_count", arrivalCountMetric, 1);
+
   }
 
   public void close() {
@@ -124,33 +125,16 @@ public class RedisTextSpout extends BaseRichSpout {
 
   @Override
   public void nextTuple() {
-    // LOG.info("nextTuple begin");
     String message = queue.poll();
 
     if( message == null){
-      // LOG.info("Sleeping for next item");
       Utils.sleep(WAIT_FOR_NEXT_TUPLE);
       return;
     }
-    // LOG.info("nextTuple emitting {}", message);
+
     _collector.emit(new Values(message));
-    // LOG.info("nextTuple emitted {}", message);
-    // measure();
-  }
 
-  private void measure(){
-    if(startTime == -1){
-      startTime = System.currentTimeMillis();
-    }
-    count ++;
-
-    long difference = (System.currentTimeMillis() - startTime)/1000;
-
-    if(difference >= 1){
-      // LOG.info("Total messages in 1 second: {}", count);
-      count = 0; //reset
-      startTime = -1;
-    }
+    arrivalCountMetric.incr();
   }
 
   public void ack(Object msgId) {
@@ -158,9 +142,9 @@ public class RedisTextSpout extends BaseRichSpout {
   }
 
   public void fail(Object msgId) {
-      
+
   }
-  
+
   public void declareOutputFields(OutputFieldsDeclarer declarer) {
     declarer.declare(new Fields("text"));
   }

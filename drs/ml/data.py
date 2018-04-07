@@ -10,7 +10,7 @@ class Data():
 
   def file_path_from(self, filename):
     current_dir = os.path.dirname(__file__)
-    return os.path.abspath(os.path.join(current_dir, os.pardir, filename))
+    return os.path.abspath(os.path.join(current_dir, filename))
 
   def load_data(self):
     self._dataframe = pd.read_csv(self.file_path)

@@ -3,6 +3,8 @@ from metric_logger import MetricLogger
 from statsd import StatsClient
 from storm_rest_api import ApiClient
 
+_arrival_count_ = 0
+
 def handleMissingMetric(f):
   def new_f(*args, **kwargs):
     try:
@@ -39,7 +41,7 @@ class MetricProcessor():
   BOLTS = ['mfp', 'reporter']
   SPOUTS = ['transaction']
   COMPONENTS = set(BOLTS + SPOUTS)
-  DATA_POINTS = ['component_id', 'arrival_rate', 'executors', 'population', 'sojourn_time']
+  DATA_POINTS = ['component_id', 'arrival_count', 'arrival_rate', 'executors', 'population', 'sojourn_time']
 
   def __init__(self, metric_dict):
     # print metric_dict
@@ -109,7 +111,18 @@ class MetricProcessor():
       self._executors = self.api.get_component(self.component_id, topology_id).executors
     return self._executors
 
+  @property
+  @handleMissingMetric
+  def current_arrival_count(self):
+    return int(self.metrics['arrival_count'])
+
+  @property
+  def arrival_count(self):
+    return _arrival_count_
+
   def process(self):
+    self.update_global_arrival_count()
+
     if not self.should_process():
       return
 
@@ -118,14 +131,15 @@ class MetricProcessor():
     self.log_to_file()
     # self.log_to_statsd()
 
-    # if self.is_bolt:
     print self
 
-    if self.backpressure != -1:
-      print "BACKPRESSURE ", self.backpressure
+  def update_global_arrival_count(self):
+    if self.current_arrival_count >=0:
+      global _arrival_count_
+      _arrival_count_ = self.current_arrival_count
 
   def should_process(self):
-    return self.component_id in self.COMPONENTS and int(self.arrival_rate) > 0
+    return self.component_id in self.COMPONENTS and int(self.arrival_count) > 0
 
   def log_to_statsd(self):
     for point in self.DATA_POINTS[1:]:
@@ -140,11 +154,13 @@ class MetricProcessor():
     self.executor_data = self.api.get_topology(topology_id)
 
   def __str__(self):
-    return "%s. arrival_rate: %s, sojourn_time: %s, population: %s, dropped_messages: %s, execute_latency: %s, executors: %s" % (
+    return "%s. arrival_count: %s, arrival_rate: %s, sojourn_time: %s, population: %s, dropped_messages: %s, execute_latency: %s, executors: %s" % (
             self.component_id, \
+            self.arrival_count, \
             self.arrival_rate, \
             self.sojourn_time, \
             self.population, \
             self.dropped_messages, \
             self.execute_latency, \
             self.executors)
+
