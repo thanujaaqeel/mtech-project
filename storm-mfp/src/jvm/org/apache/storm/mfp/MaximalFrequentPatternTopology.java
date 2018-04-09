@@ -19,7 +19,6 @@ import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.generated.AlreadyAliveException;
 import org.apache.storm.generated.InvalidTopologyException;
 import org.apache.storm.generated.AuthorizationException;
-import org.apache.storm.topology.IWindowedBolt;
 import org.apache.storm.topology.IRichSpout;
 
 import org.apache.storm.mfp.spout.RedisTextSpout;
@@ -36,15 +35,10 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
-import static org.apache.storm.topology.base.BaseWindowedBolt.Count;
-import static org.apache.storm.topology.base.BaseWindowedBolt.Duration;
-
 import org.apache.storm.mfp.metrics.HttpForwardingMetricsConsumer;
 
 public class MaximalFrequentPatternTopology {
 
-  private static final String TRANSACTION_WINDOW_SIZE = "20";
-  private static final String TRANSACTION_SLIDING_WINDOW_SIZE = "5";
   private static final String MFP_MINIMUM_SUPPORT_LEVEL = "2";
 
   private Map<String, String> options;
@@ -90,13 +84,6 @@ public class MaximalFrequentPatternTopology {
     return Integer.parseInt(options.get(component).split(",")[1]);
   }
 
-  private int getWindowSize(){
-    return Integer.parseInt(options.get("windowSize"));
-  }
-
-  private int getSlidingWindowSize(){
-    return Integer.parseInt(options.get("slidingWindowSize"));
-  }
 
   private int getMfpSupportLevel(){
     return Integer.parseInt(options.get("mfpSupportLevel"));
@@ -127,14 +114,11 @@ public class MaximalFrequentPatternTopology {
 
   private MFPMinerBolt minerBolt(){
     MFPMinerBolt minerBolt = new MFPMinerBolt(getMfpSupportLevel());
-    // IWindowedBolt bolt = minerBolt.withWindow(Count.of(getWindowSize()), Count.of(getSlidingWindowSize()));
-    // IWindowedBolt bolt = minerBolt.withTumblingWindow(new Duration(1, TimeUnit.SECONDS));
     return minerBolt;
   }
 
   private IRichSpout transactionsSpout(String redisHost){
     RedisTextSpout spout = new RedisTextSpout(redisHost, 6379, "MFP_STREAM");
-    // FileTextSpout spout = new FileTextSpout("/Users/aqeel/mtech-project/twitter-input/tweets_1.txt");
     return spout;
   }
 
@@ -152,8 +136,6 @@ public class MaximalFrequentPatternTopology {
     map.put("transaction", "1,1");
     map.put("mfp", "1,1");
     map.put("reporter", "1,1");
-    map.put("windowSize", TRANSACTION_WINDOW_SIZE);
-    map.put("slidingWindowSize", TRANSACTION_SLIDING_WINDOW_SIZE);
     map.put("mfpSupportLevel", MFP_MINIMUM_SUPPORT_LEVEL);
     map.put("metrics", "1");
 

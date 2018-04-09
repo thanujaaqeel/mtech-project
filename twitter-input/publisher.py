@@ -40,10 +40,10 @@ WINDOW_SIZE = 25
 
 def publish_for_training_data():
   publisher = Publisher(CHANNEL, FILE, WINDOW_SIZE)
-  duration = 1 #mins
+  duration = 30 #seconds
   for rate in range(10, 101, 5):
-    print "Starting publish at rate %d for duration: %d seconds" % (rate, duration*30)
-    publisher.start_constant_rate_publishing(rate, duration*30)
+    print "Starting publish at rate %d for duration: %d seconds" % (rate, duration)
+    publisher.start_constant_rate_publishing(rate, duration)
 
 def publish_realtime():
   rates_and_duration = [(100, 1), (200, 1), (400, 3), (600, 3), (400, 2), (600, 2)]
