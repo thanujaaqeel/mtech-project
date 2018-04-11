@@ -2,6 +2,7 @@ import re
 from metric_logger import MetricLogger
 from statsd import StatsClient
 from storm_rest_api import ApiClient
+from metric_status import status_store, Status
 
 _arrival_count_ = 0
 
@@ -84,6 +85,12 @@ class MetricProcessor():
     return self.metrics['__execute-latency']
 
   @property
+  def processing_rate(self):
+    if self.execute_latency <= 0:
+      return -1
+    return 1000.0/self.execute_latency
+
+  @property
   @handleMissingMetric
   def process_latency(self):
     return self.metrics['__process-latency']
@@ -129,9 +136,18 @@ class MetricProcessor():
     self.collect_executor_data()
 
     self.log_to_file()
+    self.track_metric_status()
     # self.log_to_statsd()
 
     print self
+
+  def track_metric_status(self):
+    status = Status(component = self.component_id,
+                    arrival_rate = self.arrival_count,
+                    population = self.population,
+                    executors = self.executors,
+                    processing_rate = self.processing_rate)
+    status_store.push(status)
 
   def update_global_arrival_count(self):
     if self.current_arrival_count >=0:
