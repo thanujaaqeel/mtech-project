@@ -140,7 +140,9 @@ class MetricProcessor():
     self.track_metric_status()
     # self.log_to_statsd()
 
-    print self
+    
+    print "\n\n", self
+    status_store.print_status()
 
   def track_metric_status(self):
     status = Status(component = self.component_id,
