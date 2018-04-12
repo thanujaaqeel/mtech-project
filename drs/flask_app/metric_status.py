@@ -45,7 +45,14 @@ class StatusStore(object):
   def executors_for(self, component):
     return self.mean_for(component, "executors")
 
+  def is_empty(self, component):
+    q = self.store[component]
+    return len(q) < 1
+    
   def status_for(self, component):
+    if self.is_empty(component):
+      return None
+
     return Status(**{
       "component": component,
       "arrival_rate": self.arrival_rate_for(component),

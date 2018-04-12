@@ -58,10 +58,19 @@ class Optimizer(object):
     self.total_executors = total_executors
     self.components = components
 
-  def optimize(self):
+  def statuses(self):
     statuses = [status_store.status_for(component) for component in self.components]
-    for status in statuses:
+    return [status for status in statuses if status]
+
+  def optimize(self):
+    statuses = self.statuses()
+
+    if not statuses:
+      return
+
+    for status in self.statuses:
       print "got status", status
+
     executor_assigner = ExecutorAssigner(self.total_executors, statuses)
     result = executor_assigner.process()
     print "RESULT ", result
