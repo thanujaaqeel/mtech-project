@@ -45,7 +45,7 @@ class MetricProcessor():
   DATA_POINTS = ['component_id', 'arrival_count', 'arrival_rate', 'executors', 'population', 'sojourn_time']
 
   def __init__(self, metric_dict):
-    # print metric_dict
+    self.metric_dict = metric_dict
     self.meta = Meta(metric_dict['meta'])
     self.metrics = Metrics(metric_dict['metrics'])
     self.logger = MetricLogger("metrics_4.csv", self.DATA_POINTS)
@@ -82,7 +82,8 @@ class MetricProcessor():
   @property
   @handleMissingMetric
   def execute_latency(self):
-    return self.metrics['__execute-latency']
+    latency_dict = self.metrics['__execute-latency']
+    return latency_dict.values()[0]
 
   @property
   def processing_rate(self):
@@ -170,7 +171,7 @@ class MetricProcessor():
     self.executor_data = self.api.get_topology(topology_id)
 
   def __str__(self):
-    return "%s. arrival_count: %s, arrival_rate: %s, sojourn_time: %s, population: %s, dropped_messages: %s, execute_latency: %s, executors: %s" % (
+    return "%s. arrival_count: %s, arrival_rate: %s, sojourn_time: %s, population: %s, dropped_messages: %s, execute_latency: %s, processing_rate: %s, executors: %s" % (
             self.component_id, \
             self.arrival_count, \
             self.arrival_rate, \
@@ -178,5 +179,6 @@ class MetricProcessor():
             self.population, \
             self.dropped_messages, \
             self.execute_latency, \
+            self.processing_rate, \
             self.executors)
 

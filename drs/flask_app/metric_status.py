@@ -5,10 +5,10 @@ from collections import defaultdict
 class Status(object):
   def __init__(self, component, arrival_rate, population, executors, processing_rate):
     self.component = component
-    self.arrival_rate = arrival_rate #λ
+    self.arrival_rate = arrival_rate
     self.population = population
-    self.executors = executors #k
-    self.processing_rate = processing_rate #μ
+    self.executors = executors
+    self.processing_rate = processing_rate
 
 class StatusStore(object):
   def __init__(self, max_q_length=100):
