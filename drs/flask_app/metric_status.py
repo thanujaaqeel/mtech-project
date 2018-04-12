@@ -11,7 +11,7 @@ class Status(object):
     self.processing_rate = processing_rate
 
   def __str__(self):
-    return "%s. component: %s, arrival_rate: %s, population: %s, processing_rate: %s, executors: %s" % (
+    return "component: %s, arrival_rate: %s, population: %s, processing_rate: %s, executors: %s" % (
             self.component, \
             self.arrival_rate, \
             self.population, \
@@ -24,6 +24,10 @@ class StatusStore(object):
 
   def push(self, status):
     self.store[status.component].append(status)
+
+  def clear(self):
+    for q in self.store.values():
+      q.clear()
 
   def mean_for(self, component, attribute):
     q = self.store[component]
@@ -42,12 +46,13 @@ class StatusStore(object):
     return self.mean_for(component, "executors")
 
   def status_for(self, component):
-    return {
+    return Status(**{
+      "component": component,
       "arrival_rate": self.arrival_rate_for(component),
       "population": self.population_for(component),
       "processing_rate": self.processing_rate_for(component),
       "executors": self.executors_for(component)
-    }
+    })
 
   def components(self):
     return self.store.keys()

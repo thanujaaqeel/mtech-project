@@ -141,8 +141,8 @@ class MetricProcessor():
     # self.log_to_statsd()
 
     
-    print "\n\n", self
-    status_store.print_status()
+    # print "\n\n", self
+    # status_store.print_status()
 
   def track_metric_status(self):
     status = Status(component = self.component_id,
