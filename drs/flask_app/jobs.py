@@ -1,7 +1,7 @@
 from optimizer import Optimizer
 from metric_status import status_store
 
-TOTAL_EXECUTORS = 6
+TOTAL_EXECUTORS = 10
 COMPONENTS = ["transaction", "mfp", "reporter"]
 
 def optimizer_job():
