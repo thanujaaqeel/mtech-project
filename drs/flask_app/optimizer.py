@@ -68,7 +68,7 @@ class Optimizer(object):
     if not statuses:
       return
 
-    for status in self.statuses:
+    for status in statuses:
       print "got status", status
 
     executor_assigner = ExecutorAssigner(self.total_executors, statuses)
