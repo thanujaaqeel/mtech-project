@@ -3,16 +3,9 @@ from metric_logger import MetricLogger
 from statsd import StatsClient
 from storm_rest_api import ApiClient
 from metric_status import status_store, Status
+from helper import handleMissingMetric
 
 _arrival_count_ = 0
-
-def handleMissingMetric(f):
-  def new_f(*args, **kwargs):
-    try:
-      return f(*args, **kwargs)
-    except KeyError:
-      return -1
-  return new_f
 
 class Metrics():
   def __init__(self, dictionary):

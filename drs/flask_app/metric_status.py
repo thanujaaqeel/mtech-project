@@ -43,7 +43,7 @@ class StatusStore(object):
     return self.mean_for(component, "processing_rate")
 
   def executors_for(self, component):
-    return self.mean_for(component, "executors")
+    return int(self.mean_for(component, "executors"))
 
   def is_empty(self, component):
     q = self.store[component]

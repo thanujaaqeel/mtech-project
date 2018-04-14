@@ -5,7 +5,8 @@ import math
 class OptimizeError(Exception): pass
 
 class ExecutorOptimizer(object):
-  "AssignProcesses"
+  """implements AssignProcesses algorithm"""
+
   def __init__(self, total_executors, statuses):
     self.total_executors = total_executors #Kmax
     self.statuses = statuses
@@ -40,13 +41,13 @@ class ExecutorOptimizer(object):
         sojourn_time_2 = self.sojourn_time_for(status.component, status.arrival_rate, status.population, executors_allocation[status.component] + 1)
         sojourn_time_diff = sojourn_time_1 - sojourn_time_2
 
-        print "component: %s, arrival_rate: %s, population: %s, executors: %s, sojourn_time: %s" % (
-          status.component, status.arrival_rate, status.population, executors_allocation[status.component], sojourn_time_1
-        )
-        print "component: %s, arrival_rate: %s, population: %s, executors: %s, sojourn_time: %s" % (
-          status.component, status.arrival_rate, status.population, executors_allocation[status.component]+1, sojourn_time_2
-        )
-        print "sojourn_time_diff", sojourn_time_diff
+        # print "component: %s, arrival_rate: %s, population: %s, executors: %s, sojourn_time: %s" % (
+        #   status.component, status.arrival_rate, status.population, executors_allocation[status.component], sojourn_time_1
+        # )
+        # print "component: %s, arrival_rate: %s, population: %s, executors: %s, sojourn_time: %s" % (
+        #   status.component, status.arrival_rate, status.population, executors_allocation[status.component]+1, sojourn_time_2
+        # )
+        # print "sojourn_time_diff", sojourn_time_diff
 
         if sojourn_time_diff > max_sojourn_time_diff:
           optimized_component = status.component
@@ -65,19 +66,39 @@ class Optimizer(object):
     self.total_executors = total_executors
     self.components = components
 
+  @property
   def statuses(self):
-    statuses = [status_store.status_for(component) for component in self.components]
-    return [status for status in statuses if status]
+    if not hasattr(self, "_statuses"):
+      statuses = [status_store.status_for(component) for component in self.components]
+      self._statuses = [status for status in statuses if status]
+    return self._statuses
 
-  def optimize(self):
-    statuses = self.statuses()
+  def calculate_current_allocation(self):
+    executors_allocation = {}
 
-    if not statuses:
-      return
+    for status in self.statuses:
+      executors_allocation[status.component] = status.executors
 
-    for status in statuses:
-      print "got status", status
+    return executors_allocation
 
-    executor_optimizer = ExecutorOptimizer(self.total_executors, statuses)
-    result = executor_optimizer.calulate_optimum_executors_allocation()
-    print "RESULT ", result
+  def calculate_optimized_allocation(self):
+    if not self.statuses:
+      return {}
+
+    executor_optimizer = ExecutorOptimizer(self.total_executors, self.statuses)
+    return executor_optimizer.calulate_optimum_executors_allocation()
+
+  @property
+  def current_allocation(self):
+    if not hasattr(self, "_current_allocation"):
+      self._current_allocation = self.calculate_current_allocation()
+    return self._current_allocation
+
+  @property
+  def optimized_allocation(self):
+    if not hasattr(self, "_optimized_allocation"):
+      self._optimized_allocation = self.calculate_optimized_allocation()
+    return self._optimized_allocation
+
+  def should_optimize(self):
+    return self.optimized_allocation != self.current_allocation

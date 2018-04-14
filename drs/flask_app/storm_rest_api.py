@@ -31,7 +31,7 @@ class TopologyResponse(Response):
 class ComponentResponse(Response):
   @property
   def executors(self):
-    return self.json["executors"]
+    return int(self.json["executors"])
 
 class ApiClient():
   REST_API_BASE = "http://localhost:8080/api/v1"
