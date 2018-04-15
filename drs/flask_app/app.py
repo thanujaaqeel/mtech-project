@@ -4,7 +4,7 @@ from flask import request
 from metric_processor import MetricProcessor
 from jobs import optimizer_job
 
-OPTIMIZER_JOB_INTERVAL = 10
+OPTIMIZER_JOB_INTERVAL = 60
 
 app = Flask(__name__)
 

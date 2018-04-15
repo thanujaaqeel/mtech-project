@@ -46,7 +46,7 @@ def publish_for_training_data():
     publisher.start_constant_rate_publishing(rate, duration)
 
 def publish_realtime():
-  rates_and_duration = [(100, 1), (200, 1), (400, 3), (600, 3), (400, 2), (600, 2)]
+  rates_and_duration = [(10, 0.5), (50, 1), (100, 2), (80, 1), (60,2)]
   publisher = Publisher(CHANNEL, FILE, WINDOW_SIZE)
   for rate, duration in rates_and_duration:
     print "Starting publish at rate %d for duration: %d seconds" % (rate, duration*60)

@@ -149,7 +149,17 @@ class MetricProcessor():
       _arrival_count_ = self.current_arrival_count
 
   def should_process(self):
-    return self.component_id in self.COMPONENTS and int(self.arrival_count) > 0
+    if self.is_spout:
+      return self.should_process_spout()
+    elif self.is_bolt:
+      return self.should_process_bolt()
+    return False
+  
+  def should_process_spout(self):
+    return int(self.arrival_count) > 0
+
+  def should_process_bolt(self):
+    return int(self.processing_rate) > 0 
 
   def log_to_statsd(self):
     for point in self.DATA_POINTS[1:]:

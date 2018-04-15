@@ -5,7 +5,7 @@ from helper import handleAndLogException
 import time
 
 TOPOLOGY_NAME = "mfp"
-TOTAL_EXECUTORS = 10
+TOTAL_EXECUTORS = 5
 COMPONENTS = ["transaction", "mfp", "reporter"]
 
 @handleAndLogException
