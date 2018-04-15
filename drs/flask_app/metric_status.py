@@ -68,4 +68,15 @@ class StatusStore(object):
     for c in self.components():
       print "status for", c, self.status_for(c)
 
+class AllocationStore(object):
+  def __init__(self):
+    self.executors_allocation = {}
+
+  def save_allocation(self, executors_allocation):
+    self.executors_allocation = executors_allocation
+
+  def saved_allocation(self):
+    return self.executors_allocation
+
 status_store = StatusStore()
+allocation_store = AllocationStore()

@@ -24,8 +24,9 @@ def optimizer_job():
     scheduler = StormResourceScheduler(TOPOLOGY_NAME, optimized_allocation)
     result = scheduler.schedule_allocation()
     
-    if result == 0:
-      status_store.clear() #TODO: do this only if rebalanced
+    if result == 0: #succesfully scheduled
+      status_store.clear()
+      optimizer.save_allocation(optimized_allocation)
     
     print "schedule_allocation result", result
     

@@ -1,5 +1,5 @@
 from predictor import predictor
-from metric_status import status_store
+from metric_status import status_store, allocation_store
 import math
 
 class OptimizeError(Exception): pass
@@ -88,11 +88,18 @@ class Optimizer(object):
     executor_optimizer = ExecutorOptimizer(self.total_executors, self.statuses)
     return executor_optimizer.calulate_optimum_executors_allocation()
 
+  def save_allocation(self, executors_allocation):
+    allocation_store.save_allocation(executors_allocation)
+
   @property
   def current_allocation(self):
     if not hasattr(self, "_current_allocation"):
       self._current_allocation = self.calculate_current_allocation()
     return self._current_allocation
+
+  @property
+  def previous_allocation(self):
+    allocation_store.saved_allocation()
 
   @property
   def optimized_allocation(self):
@@ -101,4 +108,4 @@ class Optimizer(object):
     return self._optimized_allocation
 
   def should_optimize(self):
-    return self.optimized_allocation != self.current_allocation
+    return self.optimized_allocation != self.previous_allocation
