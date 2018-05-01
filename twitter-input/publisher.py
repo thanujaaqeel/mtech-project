@@ -35,7 +35,7 @@ class Publisher():
               break
 
 CHANNEL = "MFP_STREAM"
-FILE = "samples.txt"
+FILE = "sentences.txt"
 WINDOW_SIZE = 25
 
 def publish_for_training_data():
