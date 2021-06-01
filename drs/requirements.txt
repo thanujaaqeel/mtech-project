@@ -27,5 +27,5 @@ sklearn==0.0
 statsd==3.2.2
 subprocess32==3.2.7
 tzlocal==1.5.1
-urllib3==1.22
+urllib3==1.26.5
 Werkzeug==0.14.1
